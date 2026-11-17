@@ -42,7 +42,7 @@ El caso cerrado de dinero es 890 céntimos por 1.5 kg = 1335 céntimos.
 
 ## Kubernetes en AWS
 
-1. Crear el clúster EKS 1.31 con `deploy/aws/cluster.yaml` (`eksctl create cluster -f deploy/aws/cluster.yaml`). No es EKS Auto Mode: el Ingress usa el AWS Load Balancer Controller.
+1. Crear el clúster EKS 1.35 con `deploy/aws/cluster.yaml` (`eksctl create cluster -f deploy/aws/cluster.yaml`). No es EKS Auto Mode. Los nodos son `t3.small` porque esta cuenta solo lanza tipos del nivel gratuito. El Ingress usa el AWS Load Balancer Controller.
 2. Instalar ese controlador con Helm y Pod Identity, y el addon EBS CSI que ya pide el manifiesto del clúster.
 3. Cambiar las claves `catalogo-password` y `pedidos-password` del secreto `feria-db` antes de exponerlo. El valor del repositorio es un marcador.
 4. Publicar imágenes y aplicar el overlay:
@@ -54,5 +54,16 @@ bash deploy/aws/subir.sh
 ```
 
 El balanceador solo abre la web. Catálogo y pedidos se quedan dentro del namespace `feria`, cada uno contra su Postgres.
+
+El clúster `feria` en `us-east-1` publica el puesto en:
+
+http://k8s-feria-web-2be4ec8368-557112646.us-east-1.elb.amazonaws.com
+
+Para dejar de pagar el plano de control, el NAT, el balanceador y los nodos:
+
+```bash
+kubectl delete -k deploy/k8s/overlays/aws
+eksctl delete cluster --name feria --region us-east-1
+```
 
 Para un clúster local, `kubectl apply -k deploy/k8s/overlays/local` usa la clase de almacenamiento por defecto.

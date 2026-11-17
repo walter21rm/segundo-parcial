@@ -167,7 +167,7 @@ Las contraseñas `catalogo_dev` y `pedidos_dev` son solo para la máquina local.
 
 ## Kubernetes en AWS
 
-Clúster EKS 1.31 estándar, no Auto Mode, para poder usar las anotaciones del AWS Load Balancer Controller. El archivo `deploy/aws/cluster.yaml` lo describe: dos nodos `t3.medium` en subredes privadas, OIDC y el addon `aws-ebs-csi-driver`.
+Clúster EKS 1.35 estándar, no Auto Mode, para poder usar las anotaciones del AWS Load Balancer Controller. 1.31 quedó en soporte extendido y deja de existir el 26 de noviembre de 2026, así que un clúster nuevo usa 1.35, que sigue en soporte estándar. El archivo `deploy/aws/cluster.yaml` lo describe: `autoModeConfig.enabled: false`, dos nodos `t3.small` en subredes privadas, OIDC y el addon `aws-ebs-csi-driver`. `t3.small` es el tamaño que esta cuenta puede lanzar dentro del nivel gratuito; `t3.medium` queda fuera de ese filtro.
 
 Dentro del namespace `feria`:
 
@@ -180,4 +180,4 @@ Dentro del namespace `feria`:
 
 El controlador del balanceador se instala con Helm y Pod Identity, como documenta AWS Load Balancer Controller, antes de aplicar el overlay. `deploy/aws/subir.sh` crea los repositorios ECR `feria-catalogo`, `feria-pedidos` y `feria-web`, publica el tag `1.0.0` y aplica el overlay.
 
-No se crea el clúster desde esta máquina: un EKS nuevo tiene costo y exige credenciales de la cuenta.
+El clúster se crea con `eksctl create cluster -f deploy/aws/cluster.yaml`. Tiene costo mientras siga encendido: el plano de control, el NAT de las subredes privadas, el balanceador y los dos nodos. Se apaga con `kubectl delete -k deploy/k8s/overlays/aws` y después `eksctl delete cluster --name feria --region us-east-1`.

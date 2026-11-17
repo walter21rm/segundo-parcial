@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-catalogo
+  namespace: feria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-catalogo
+  template:
+    metadata:
+      labels:
+        app: postgres-catalogo
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: postgres:16.6-bookworm
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: catalogo
+            - name: POSTGRES_DB
+              value: catalogo
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: feria-db
+                  key: catalogo-password
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "catalogo", "-d", "catalogo"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-catalogo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-catalogo
+  namespace: feria
+spec:
+  selector:
+    app: postgres-catalogo
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-catalogo
+  namespace: feria
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: feria-gp3
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-pedidos
+  namespace: feria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-pedidos
+  template:
+    metadata:
+      labels:
+        app: postgres-pedidos
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: postgres:16.6-bookworm
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: pedidos
+            - name: POSTGRES_DB
+              value: pedidos
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: feria-db
+                  key: pedidos-password
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "pedidos", "-d", "pedidos"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-pedidos
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-pedidos
+  namespace: feria
+spec:
+  selector:
+    app: postgres-pedidos
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pedidos
+  namespace: feria
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: feria-gp3
+  resources:
+    requests:
+      storage: 5Gi

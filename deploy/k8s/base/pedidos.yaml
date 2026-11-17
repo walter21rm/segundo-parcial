@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedidos
+  namespace: feria
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedidos
+  template:
+    metadata:
+      labels:
+        app: pedidos
+    spec:
+      containers:
+        - name: pedidos
+          image: feria/pedidos:1.0.0
+          ports:
+            - name: http
+              containerPort: 8092
+          env:
+            - name: PORT
+              value: "8092"
+            - name: SEED
+              value: "true"
+            - name: VERSION
+              value: "1.0.0"
+            - name: CATALOGO_URL
+              value: http://catalogo:8091
+            - name: CATALOGO_TIMEOUT_SEGUNDOS
+              value: "3"
+            - name: PGHOST
+              value: postgres-pedidos
+            - name: PGUSER
+              value: pedidos
+            - name: PGDATABASE
+              value: pedidos
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: feria-db
+                  key: pedidos-password
+          readinessProbe:
+            httpGet:
+              path: /listo
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /salud
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos
+  namespace: feria
+spec:
+  selector:
+    app: pedidos
+  ports:
+    - name: http
+      port: 8092
+      targetPort: http
